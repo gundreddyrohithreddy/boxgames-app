@@ -1,0 +1,115 @@
+// prisma/schema.prisma
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  phone     String?
+  password  String
+  role      Role     @default(PLAYER)
+  createdAt DateTime @default(now())
+
+  venues    Venue[]
+  bookings  Booking[]
+}
+
+enum Role {
+  PLAYER
+  OWNER
+  ADMIN
+}
+
+model Venue {
+  id          Int        @id @default(autoincrement())
+  ownerId     Int
+  name        String
+  description String?
+  city        String
+  address     String
+  latitude    Float?
+  longitude   Float?
+  sports      String     // e.g. "Football,Cricket"
+  images      String?    // maybe CSV/JSON as text
+
+  createdAt   DateTime   @default(now())
+
+  owner       User       @relation(fields: [ownerId], references: [id])
+  courts      Court[]
+}
+
+model Court {
+  id               Int        @id @default(autoincrement())
+  venueId          Int
+  sport            String
+  basePricePerHour Int
+
+  venue            Venue      @relation(fields: [venueId], references: [id])
+  timeSlots        TimeSlot[]
+  bookings         Booking[]
+}
+
+model TimeSlot {
+  id        Int      @id @default(autoincrement())
+  courtId   Int
+  date      DateTime
+  startTime DateTime
+  endTime   DateTime
+  status    SlotStatus @default(AVAILABLE)
+
+  court     Court     @relation(fields: [courtId], references: [id])
+  booking   Booking?
+}
+
+enum SlotStatus {
+  AVAILABLE
+  BOOKED
+  BLOCKED
+}
+
+model Booking {
+  id            Int          @id @default(autoincrement())
+  userId        Int
+  courtId       Int
+  timeSlotId    Int    @unique
+  amount        Int
+  paymentStatus PaymentStatus @default(PENDING)
+  bookingStatus BookingStatus @default(PENDING)
+  createdAt     DateTime      @default(now())
+
+  user          User      @relation(fields: [userId], references: [id])
+  court         Court     @relation(fields: [courtId], references: [id])
+  timeSlot      TimeSlot  @relation(fields: [timeSlotId], references: [id])
+  payment       Payment?
+}
+
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+model Payment {
+  id                   Int           @id @default(autoincrement())
+  bookingId            Int           @unique
+  method               String
+  providerTransactionId String?
+  amount               Int
+  status               PaymentStatus @default(PENDING)
+  createdAt            DateTime      @default(now())
+
+  booking              Booking       @relation(fields: [bookingId], references: [id])
+}
