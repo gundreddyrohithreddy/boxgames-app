@@ -1,0 +1,14 @@
+const venue = await prisma.venue.findUnique({
+  where: { id },
+  include: {
+    courts: true,
+    reviews: {
+      include: {
+        player: {
+          select: { id: true, name: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    },
+  },
+});

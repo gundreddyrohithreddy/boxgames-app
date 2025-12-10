@@ -1,7 +1,7 @@
 // prisma/schema.prisma
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL") // ✅ classic Prisma 6 pattern
 }
 
@@ -38,6 +38,9 @@ model Venue {
   courts      Court[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  reviews        Review[]
+  ratingAverage  Float?   @default(0)
+  ratingCount    Int      @default(0)
 }
 
 model Court {
@@ -91,6 +94,9 @@ model Booking {
   totalAmount  Int
   paymentStatus PaymentStatus @default(PENDING)
   createdAt    DateTime @default(now())
+  paymentOrderId String?
+  paymentId      String?
+
 }
 
 enum BookingStatus {
@@ -117,4 +123,17 @@ model Payment {
   createdAt            DateTime      @default(now())
 
   booking Booking @relation(fields: [bookingId], references: [id])
+}
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+
+  player    User  @relation(fields: [playerId], references: [id])
+  playerId  Int
+
+  venue     Venue @relation(fields: [venueId], references: [id])
+  venueId   Int
 }

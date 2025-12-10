@@ -30,26 +30,55 @@ exports.getAllVenues = async (req, res, next) => {
   }
 };
 
-exports.getVenueById = async (req, res, next) => {
+exports.getAllVenues = async (req, res, next) => {
   try {
-    const id = Number(req.params.id);
+    const { city, sportType, q, priceMin, priceMax } = req.query;
 
-    const venue = await prisma.venue.findUnique({
-      where: { id },
+    const venues = await prisma.venue.findMany({
+      where: {
+        ...(city ? { city: { contains: city, mode: 'insensitive' } } : {}),
+        ...(q
+          ? {
+              OR: [
+                { name: { contains: q, mode: 'insensitive' } },
+                { description: { contains: q, mode: 'insensitive' } },
+              ],
+            }
+          : {}),
+        ...(sportType
+          ? {
+              courts: {
+                some: {
+                  sportType: { equals: sportType, mode: 'insensitive' },
+                },
+              },
+            }
+          : {}),
+        ...(priceMin || priceMax
+          ? {
+              courts: {
+                some: {
+                  pricePerHour: {
+                    ...(priceMin ? { gte: Number(priceMin) } : {}),
+                    ...(priceMax ? { lte: Number(priceMax) } : {}),
+                  },
+                },
+              },
+            }
+          : {}),
+      },
       include: {
         courts: true,
       },
+      orderBy: { createdAt: 'desc' },
     });
 
-    if (!venue) {
-      return res.status(404).json({ message: 'Venue not found' });
-    }
-
-    res.json({ venue });
+    res.json({ venues });
   } catch (err) {
     next(err);
   }
 };
+
 
 exports.createVenue = async (req, res, next) => {
   try {

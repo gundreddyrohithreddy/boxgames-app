@@ -6,3 +6,4 @@ const role = require('../middlewares/roleMiddleware');
 router.get('/overview', auth, role(['ADMIN']), adminController.getOverview);
 
 module.exports = router;
+
