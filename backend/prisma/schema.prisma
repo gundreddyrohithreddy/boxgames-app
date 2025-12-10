@@ -1,6 +1,8 @@
 // prisma/schema.prisma
+
 datasource db {
   provider = "sqlite"
+  url      = env("DATABASE_URL") // ✅ classic Prisma 6 pattern
 }
 
 generator client {
@@ -27,7 +29,7 @@ enum Role {
 }
 
 model Venue {
-  id          Int        @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   ownerId     Int
   name        String
   description String?
@@ -35,36 +37,35 @@ model Venue {
   address     String
   latitude    Float?
   longitude   Float?
-  sports      String     // e.g. "Football,Cricket"
-  images      String?    // maybe CSV/JSON as text
+  sports      String      // e.g. "Football,Cricket"
+  images      String?     // maybe CSV/JSON as text
+  createdAt   DateTime @default(now())
 
-  createdAt   DateTime   @default(now())
-
-  owner       User       @relation(fields: [ownerId], references: [id])
-  courts      Court[]
+  owner   User   @relation(fields: [ownerId], references: [id])
+  courts  Court[]
 }
 
 model Court {
-  id               Int        @id @default(autoincrement())
+  id               Int       @id @default(autoincrement())
   venueId          Int
   sport            String
   basePricePerHour Int
 
-  venue            Venue      @relation(fields: [venueId], references: [id])
-  timeSlots        TimeSlot[]
-  bookings         Booking[]
+  venue     Venue     @relation(fields: [venueId], references: [id])
+  timeSlots TimeSlot[]
+  bookings  Booking[]
 }
 
 model TimeSlot {
-  id        Int      @id @default(autoincrement())
+  id        Int        @id @default(autoincrement())
   courtId   Int
   date      DateTime
   startTime DateTime
   endTime   DateTime
   status    SlotStatus @default(AVAILABLE)
 
-  court     Court     @relation(fields: [courtId], references: [id])
-  booking   Booking?
+  court   Court    @relation(fields: [courtId], references: [id])
+  booking Booking?
 }
 
 enum SlotStatus {
@@ -74,21 +75,20 @@ enum SlotStatus {
 }
 
 model Booking {
-  id            Int          @id @default(autoincrement())
+  id            Int           @id @default(autoincrement())
   userId        Int
   courtId       Int
-  timeSlotId    Int    @unique
+  timeSlotId    Int  @unique
   amount        Int
   paymentStatus PaymentStatus @default(PENDING)
   bookingStatus BookingStatus @default(PENDING)
   createdAt     DateTime      @default(now())
 
-  user          User      @relation(fields: [userId], references: [id])
-  court         Court     @relation(fields: [courtId], references: [id])
-  timeSlot      TimeSlot  @relation(fields: [timeSlotId], references: [id])
-  payment       Payment?
+  user     User     @relation(fields: [userId], references: [id])
+  court    Court    @relation(fields: [courtId], references: [id])
+  timeSlot TimeSlot @relation(fields: [timeSlotId], references: [id])
+  payment  Payment?
 }
-
 
 enum PaymentStatus {
   PENDING
@@ -111,5 +111,5 @@ model Payment {
   status               PaymentStatus @default(PENDING)
   createdAt            DateTime      @default(now())
 
-  booking              Booking       @relation(fields: [bookingId], references: [id])
+  booking Booking @relation(fields: [bookingId], references: [id])
 }

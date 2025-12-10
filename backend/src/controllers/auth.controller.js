@@ -52,32 +52,42 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
-
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
+    const user = await prisma.user.findUnique({ where: { email } });
 
     if (!user) {
-      return res.status(400).json({ message: "Invalid email or password" });
+      return res.status(400).json({ message: "User not found" });
     }
 
-    const match = await bcrypt.compare(password, user.password);
-    if (!match) {
-      return res.status(400).json({ message: "Invalid email or password" });
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Invalid password" });
     }
 
-    res.json({
+    const token = jwt.sign(
+      { id: user.id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    // Set secure HTTP-Only cookie
+    res.cookie("boxgames_token", token, {
+      httpOnly: true,
+      secure: false,       // ❗ Set TRUE in production (HTTPS)
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    return res.json({
       message: "Login successful",
       user: {
         id: user.id,
-        name: user.name,
         email: user.email,
         role: user.role,
       },
-      token: generateToken(user.id),
     });
-  } catch (err) {
-    console.error(err);
+  } catch (error) {
+    console.log(error);
     res.status(500).json({ message: "Server error" });
   }
 };
+

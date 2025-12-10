@@ -1,18 +1,18 @@
 const API_BASE = "http://localhost:4000";
 
-export async function apiRequest(path, options = {}) {
+export async function apiClient(path, options = {}) {
   const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    credentials: "include",   // 🔥 IMPORTANT
     headers: {
       "Content-Type": "application/json",
-      ...(options.token ? { Authorization: `Bearer ${options.token}` } : {}),
+      ...(options.headers || {}),
     },
-    ...options,
-    body: options.body ? JSON.stringify(options.body) : undefined,
   });
 
-  const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error(data.message || "API error");
+    throw new Error("API Error");
   }
-  return data;
+
+  return res.json();
 }

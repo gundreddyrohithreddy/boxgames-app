@@ -60,3 +60,38 @@ exports.getVenue = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
+
+exports.getAllVenues = async (req, res) => {
+  try {
+    const venues = await prisma.venue.findMany({
+      include: {
+        courts: true,
+      },
+    });
+    res.json(venues);
+  } catch (err) {
+    console.error('Error fetching venues:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+exports.getVenueById = async (req, res) => {
+  try {
+    const venue = await prisma.venue.findUnique({
+      where: { id: Number(req.params.id) },
+      include: { courts: true },
+    });
+
+    if (!venue) {
+      return res.status(404).json({ message: 'Venue not found' });
+    }
+
+    res.json(venue);
+  } catch (err) {
+    console.error('Error fetching venue:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
