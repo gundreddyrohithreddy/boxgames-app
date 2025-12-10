@@ -9,52 +9,47 @@ generator client {
   provider = "prisma-client-js"
 }
 
-model User {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String   @unique
-  phone     String?
-  password  String
-  role      Role     @default(PLAYER)
-  createdAt DateTime @default(now())
-
-  venues    Venue[]
-  bookings  Booking[]
-}
-
 enum Role {
   PLAYER
   OWNER
   ADMIN
 }
 
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
+  phone        String?
+  passwordHash String
+  role         Role
+  venues       Venue[]  @relation("ProviderVenues")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
 model Venue {
   id          Int      @id @default(autoincrement())
-  ownerId     Int
   name        String
   description String?
-  city        String
-  address     String
-  latitude    Float?
-  longitude   Float?
-  sports      String      // e.g. "Football,Cricket"
-  images      String?     // maybe CSV/JSON as text
+  city        String?
+  address     String?
+  provider    User     @relation("ProviderVenues", fields: [providerId], references: [id])
+  providerId  Int
+  courts      Court[]
   createdAt   DateTime @default(now())
-
-  owner   User   @relation(fields: [ownerId], references: [id])
-  courts  Court[]
+  updatedAt   DateTime @updatedAt
 }
 
 model Court {
-  id               Int       @id @default(autoincrement())
-  venueId          Int
-  sport            String
-  basePricePerHour Int
-
-  venue     Venue     @relation(fields: [venueId], references: [id])
-  timeSlots TimeSlot[]
-  bookings  Booking[]
+  id          Int      @id @default(autoincrement())
+  name        String
+  sportType   String
+  pricePerHour Int
+  venue       Venue    @relation(fields: [venueId], references: [id])
+  venueId     Int
+  slots       Slot[]
 }
+
 
 model TimeSlot {
   id        Int        @id @default(autoincrement())
@@ -68,39 +63,49 @@ model TimeSlot {
   booking Booking?
 }
 
+model Slot {
+  id        Int      @id @default(autoincrement())
+  date      DateTime
+  startTime DateTime
+  endTime   DateTime
+  status    SlotStatus @default(AVAILABLE)
+  court     Court   @relation(fields: [courtId], references: [id])
+  courtId   Int
+  booking   Booking?
+}
+
 enum SlotStatus {
   AVAILABLE
   BOOKED
   BLOCKED
 }
 
+
 model Booking {
-  id            Int           @id @default(autoincrement())
-  userId        Int
-  courtId       Int
-  timeSlotId    Int  @unique
-  amount        Int
+  id           Int      @id @default(autoincrement())
+  player       User     @relation(fields: [playerId], references: [id])
+  playerId     Int
+  slot         Slot     @relation(fields: [slotId], references: [id])
+  slotId       Int
+  status       BookingStatus @default(PENDING)
+  totalAmount  Int
   paymentStatus PaymentStatus @default(PENDING)
-  bookingStatus BookingStatus @default(PENDING)
-  createdAt     DateTime      @default(now())
-
-  user     User     @relation(fields: [userId], references: [id])
-  court    Court    @relation(fields: [courtId], references: [id])
-  timeSlot TimeSlot @relation(fields: [timeSlotId], references: [id])
-  payment  Payment?
-}
-
-enum PaymentStatus {
-  PENDING
-  SUCCESS
-  FAILED
+  createdAt    DateTime @default(now())
 }
 
 enum BookingStatus {
   PENDING
   CONFIRMED
   CANCELLED
+  COMPLETED
 }
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
 
 model Payment {
   id                   Int           @id @default(autoincrement())

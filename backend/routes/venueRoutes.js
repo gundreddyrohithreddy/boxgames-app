@@ -1,15 +1,15 @@
-const express = require('express');
-const router = express.Router();
+const router = require('express').Router();
 const venueController = require('../controllers/venueController');
-const authMiddleware = require('../middlewares/authMiddleware');
+const auth = require('../middlewares/authMiddleware');
+const role = require('../middlewares/roleMiddleware');
 
 // Public
 router.get('/', venueController.getAllVenues);
 router.get('/:id', venueController.getVenueById);
 
-// Provider only (will use auth + role check)
-router.post('/', authMiddleware, venueController.createVenue);
-router.put('/:id', authMiddleware, venueController.updateVenue);
-router.delete('/:id', authMiddleware, venueController.deleteVenue);
+// Provider
+router.post('/', auth, role(['PROVIDER']), venueController.createVenue);
+router.put('/:id', auth, role(['PROVIDER']), venueController.updateVenue);
+router.delete('/:id', auth, role(['PROVIDER']), venueController.deleteVenue);
 
 module.exports = router;
